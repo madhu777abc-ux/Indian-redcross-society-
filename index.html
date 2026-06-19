@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sample Tracker — Red Cross Society Usmanpura</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --red:#B91C2C; --red-dark:#8B1424; --ink:#1C1F23; --muted:#6B7280;
+    --bg:#FAFAF9; --card:#FFFFFF; --border:#E4E2DD;
+    --green:#1F8A52; --green-bg:#EAF6EE; --amber:#A8650A; --amber-bg:#FCF1DC;
+    --crit:#C7273A; --crit-bg:#FBE7E9;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;}
+  .topbar{background:linear-gradient(135deg,var(--red),var(--red-dark));color:#fff;padding:18px 24px;display:flex;align-items:center;gap:14px;}
+  .mark{width:32px;height:32px;background:#fff;border-radius:7px;position:relative;flex-shrink:0;}
+  .mark::before,.mark::after{content:'';position:absolute;background:var(--red);border-radius:1px;}
+  .mark::before{left:50%;top:7px;bottom:7px;width:8px;transform:translateX(-50%);}
+  .mark::after{top:50%;left:7px;right:7px;height:8px;transform:translateY(-50%);}
+  .brand{font-weight:700;font-size:17px;line-height:1.2;}
+  .brand-sub{font-size:12.5px;opacity:.85;}
+  .btn{font-family:'Inter',sans-serif;font-weight:600;border:none;border-radius:8px;padding:10px 16px;cursor:pointer;font-size:14px;white-space:nowrap;}
+  .btn-primary{background:var(--red);color:#fff;}
+  .btn-primary:hover{background:var(--red-dark);}
+  .btn-ghost{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.4);}
+  .btn-ghost:hover{background:rgba(255,255,255,.25);}
+
+  .stage-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;padding:32px;max-width:980px;margin:0 auto;}
+  .stage-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px;cursor:pointer;transition:.15s;}
+  .stage-card:hover{border-color:var(--red);transform:translateY(-2px);box-shadow:0 10px 26px rgba(0,0,0,.07);}
+  .stage-card .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--red);font-weight:600;letter-spacing:.06em;}
+  .stage-card h3{margin:8px 0 4px;font-size:20px;}
+  .stage-card p{margin:0;color:var(--muted);font-size:13.5px;}
+  .director-card{background:var(--ink);border-color:var(--ink);}
+  .director-card h3,.director-card p{color:#fff;}
+  .director-card p{opacity:.7;}
+
+  .scan-box{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;margin:20px auto;max-width:900px;}
+  .scan-label{font-size:13px;font-weight:600;color:var(--muted);display:block;margin-bottom:8px;}
+  .scan-row{display:flex;gap:10px;}
+  #scanInput{flex:1;font-family:'IBM Plex Mono',monospace;font-size:17px;padding:12px 14px;border:2px solid var(--border);border-radius:10px;}
+  #scanInput:focus{border-color:var(--red);outline:none;}
+  .hint{font-size:12.5px;color:var(--muted);margin-top:10px;}
+
+  .panel{max-width:900px;margin:0 auto 20px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;}
+  .panel h4{margin:0 0 12px;font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;}
+  .table-wrap{overflow-x:auto;}
+  .table{width:100%;border-collapse:collapse;}
+  .table th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);padding:8px 12px;border-bottom:1px solid var(--border);}
+  .table td{padding:12px;border-bottom:1px solid var(--border);font-size:14px;}
+  .table tr.sample-row{cursor:pointer;}
+  .table tr.sample-row:hover{background:#FBFAF8;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  .empty{color:var(--muted);font-style:italic;}
+
+  .timer{font-family:'IBM Plex Mono',monospace;font-weight:600;padding:4px 9px;border-radius:6px;background:var(--green-bg);color:var(--green);display:inline-block;letter-spacing:.02em;}
+  .timer.warn{background:var(--amber-bg);color:var(--amber);}
+  .timer.crit{background:var(--crit-bg);color:var(--crit);}
+
+  .stats-row{display:flex;gap:14px;max-width:900px;margin:0 auto 20px;flex-wrap:wrap;}
+  .stat-card{flex:1;min-width:140px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;text-align:center;}
+  .stat-num{font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:600;color:var(--red);}
+  .stat-label{font-size:12.5px;color:var(--muted);margin-top:4px;}
+
+  .hist-box{display:flex;flex-direction:column;gap:6px;padding:8px 4px;}
+  .hist-row{display:flex;justify-content:space-between;font-size:13px;padding:4px 8px;background:#FBFAF8;border-radius:6px;}
+
+  #directorSearch{font-family:'IBM Plex Mono',monospace;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;width:220px;margin-bottom:14px;}
+
+  #toast-container{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;align-items:flex-end;z-index:999;max-width:320px;}
+  .toast{background:#fff;border-left:4px solid var(--green);box-shadow:0 6px 20px rgba(0,0,0,.14);padding:11px 16px;border-radius:8px;margin-top:8px;font-size:13.5px;opacity:0;transform:translateY(8px);animation:toastIn .2s forwards;max-width:300px;}
+  .toast-error{border-left-color:var(--crit);}
+  .toast.out{opacity:0;transform:translateY(-6px);transition:.25s;}
+  @keyframes toastIn{to{opacity:1;transform:translateY(0);}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast-container"></div>
+
+<script>
+const DEFAULT_STAGES = ['Reception','Lab','Processing','Storage & Issue'];
+const WARN_MS = 15*60*1000;
+const CRIT_MS = 30*60*1000;
+const STORAGE_KEY = 'tracker-state';
+
+let currentState = null;
+let currentView = {type:'role'};
+let directorFilter = '';
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function domId(id){ return 'detail-'+String(id).replace(/[^a-zA-Z0-9_-]/g,'_'); }
+
+function formatDuration(ms){
+  if(ms<0) ms=0;
+  const totalSec = Math.floor(ms/1000);
+  const h = Math.floor(totalSec/3600);
+  const m = Math.floor((totalSec%3600)/60);
+  const s = totalSec%60;
+  if(h>0) return h+'h '+String(m).padStart(2,'0')+'m';
+  return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+}
+function timerClass(ms){
+  if(ms>=CRIT_MS) return 'crit';
+  if(ms>=WARN_MS) return 'warn';
+  return '';
+}
+function isToday(ts){
+  const d=new Date(ts), n=new Date();
+  return d.toDateString()===n.toDateString();
+}
+
+function showToast(msg, kind){
+  const c = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = 'toast toast-'+(kind||'success');
+  el.textContent = msg;
+  c.appendChild(el);
+  setTimeout(()=>{ el.classList.add('out'); setTimeout(()=>el.remove(),300); }, 2800);
+}
+
+async function loadState(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY, true);
+    currentState = JSON.parse(res.value);
+    if(!currentState.stages || !currentState.samples) throw new Error('bad shape');
+  }catch(e){
+    currentState = {stages: DEFAULT_STAGES.slice(), samples: {}};
+    await saveState();
+  }
+}
+async function saveState(){
+  try{
+    await window.storage.set(STORAGE_KEY, JSON.stringify(currentState), true);
+  }catch(e){
+    showToast('Could not save changes — check connection and try again.', 'error');
+  }
+}
+async function poll(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY, true);
+    if(res && res.value !== JSON.stringify(currentState)){
+      currentState = JSON.parse(res.value);
+      render();
+      tickTimers();
+    }
+  }catch(e){ /* ignore transient errors */ }
+}
+
+function goRole(){ currentView={type:'role'}; render(); tickTimers(); }
+function goStation(stage){ currentView={type:'station', stage}; render(); tickTimers(); }
+function goDirector(){ currentView={type:'director'}; render(); tickTimers(); }
+
+function activeSamplesAt(stage){
+  return Object.values(currentState.samples).filter(s=>{
+    const last = s.history[s.history.length-1];
+    return !s.completed && last.stage===stage && last.dispatchedAt===null;
+  }).sort((a,b)=> a.history[a.history.length-1].receivedAt - b.history[b.history.length-1].receivedAt);
+}
+function incomingSamplesTo(stage){
+  const stages = currentState.stages;
+  return Object.values(currentState.samples).filter(s=>{
+    if(s.completed) return false;
+    const last = s.history[s.history.length-1];
+    if(last.dispatchedAt===null) return false;
+    const idx = stages.indexOf(last.stage);
+    return stages[idx+1]===stage;
+  }).sort((a,b)=> a.history[a.history.length-1].dispatchedAt - b.history[b.history.length-1].dispatchedAt);
+}
+
+function handleScanSubmit(stationName){
+  const input = document.getElementById('scanInput');
+  const id = input.value.trim();
+  if(!id) return;
+  processScan(stationName, id);
+  input.value='';
+  input.focus();
+}
+
+function processScan(stationName, id){
+  const stages = currentState.stages;
+  let sample = currentState.samples[id];
+  const now = Date.now();
+
+  if(!sample){
+    if(stages[0] !== stationName){
+      showToast('Unknown sample "'+id+'". New samples must be scanned in at '+stages[0]+' first.', 'error');
+      return;
+    }
+    currentState.samples[id] = {
+      id, createdAt: now, completed:false, completedAt:null,
+      history: [{stage: stationName, receivedAt: now, dispatchedAt: null}]
+    };
+    showToast('Sample '+id+' received at '+stationName+'.', 'success');
+  } else {
+    if(sample.completed){
+      showToast('Sample '+id+' is already marked complete.', 'error');
+      return;
+    }
+    const last = sample.history[sample.history.length-1];
+    if(last.dispatchedAt === null){
+      if(last.stage === stationName){
+        showToast('Sample '+id+' is already here at '+stationName+'.', 'error');
+      } else {
+        showToast('Sample '+id+' is currently at '+last.stage+', not '+stationName+'.', 'error');
+      }
+      return;
+    }
+    const idx = stages.indexOf(last.stage);
+    const expected = stages[idx+1];
+    if(expected !== stationName){
+      showToast('Sample '+id+' should go to '+(expected||'nowhere — already finished')+', not '+stationName+'.', 'error');
+      return;
+    }
+    sample.history.push({stage: stationName, receivedAt: now, dispatchedAt: null});
+    showToast('Sample '+id+' received at '+stationName+'.', 'success');
+  }
+  saveState();
+  render();
+  tickTimers();
+}
+
+function dispatchSample(id, stationName){
+  const sample = currentState.samples[id];
+  if(!sample) return;
+  const last = sample.history[sample.history.length-1];
+  if(last.stage !== stationName || last.dispatchedAt !== null) return;
+  const now = Date.now();
+  last.dispatchedAt = now;
+  const stages = currentState.stages;
+  if(stages.indexOf(stationName) === stages.length-1){
+    sample.completed = true;
+    sample.completedAt = now;
+  }
+  showToast('Sample '+id+' dispatched from '+stationName+'.', 'success');
+  saveState();
+  render();
+  tickTimers();
+}
+
+function toggleDetail(id){
+  const el = document.getElementById(domId(id));
+  if(el) el.style.display = (el.style.display==='none' ? 'table-row' : 'none');
+}
+function setDirectorFilter(v){ directorFilter=v; render(); tickTimers(); }
+
+function tickTimers(){
+  document.querySelectorAll('.timer').forEach(el=>{
+    const start = parseInt(el.dataset.start, 10);
+    const endAttr = el.dataset.end;
+    const end = (endAttr && endAttr !== '') ? parseInt(endAttr,10) : Date.now();
+    const ms = end-start;
+    el.textContent = formatDuration(ms);
+    const cls = timerClass(ms);
+    el.className = 'timer'+(cls?' '+cls:'');
+  });
+}
+
+function render(){
+  const app = document.getElementById('app');
+  const preserved = {};
+  ['scanInput','directorSearch'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) preserved[id] = {value: el.value, focused: document.activeElement===el};
+  });
+
+  if(currentView.type==='role') app.innerHTML = renderRoleHTML();
+  else if(currentView.type==='station') app.innerHTML = renderStationHTML(currentView.stage);
+  else app.innerHTML = renderDirectorHTML();
+
+  Object.keys(preserved).forEach(id=>{
+    const el = document.getElementById(id);
+    if(el){ el.value = preserved[id].value; if(preserved[id].focused) el.focus(); }
+  });
+}
+
+function renderRoleHTML(){
+  const stages = currentState.stages;
+  const cards = stages.map((s,i)=>(
+    '<div class="stage-card" onclick="goStation('+JSON.stringify(s)+')">'+
+      '<div class="eyebrow">STAGE 0'+(i+1)+'</div>'+
+      '<h3>'+escapeHtml(s)+'</h3>'+
+      '<p>'+activeSamplesAt(s).length+' sample(s) here now</p>'+
+    '</div>'
+  )).join('');
+  return (
+    '<div class="topbar"><div class="mark"></div><div><div class="brand">Sample Tracker</div><div class="brand-sub">Red Cross Society — Usmanpura</div></div></div>'+
+    '<div class="stage-grid">'+cards+
+      '<div class="stage-card director-card" onclick="goDirector()">'+
+        '<div class="eyebrow" style="color:#F59E0B">OVERVIEW</div>'+
+        '<h3>Director Dashboard</h3>'+
+        '<p>'+Object.keys(currentState.samples).length+' total sample(s) tracked</p>'+
+      '</div>'+
+    '</div>'
+  );
+}
+
+function renderStationHTML(stage){
+  const stages = currentState.stages;
+  const idx = stages.indexOf(stage);
+  const isLast = idx===stages.length-1;
+  const active = activeSamplesAt(stage);
+  const incoming = incomingSamplesTo(stage);
+
+  const activeRows = active.map(s=>{
+    const last = s.history[s.history.length-1];
+    const label = isLast ? 'Mark dispatched / issued' : 'Dispatch to '+escapeHtml(stages[idx+1]);
+    return '<tr><td class="mono">'+escapeHtml(s.id)+'</td>'+
+      '<td><span class="timer" data-start="'+last.receivedAt+'"></span></td>'+
+      '<td><button class="btn btn-primary" onclick="dispatchSample('+JSON.stringify(s.id)+','+JSON.stringify(stage)+')">'+label+'</button></td></tr>';
+  }).join('') || '<tr><td colspan="3" class="empty">No samples currently here.</td></tr>';
+
+  const incomingRows = incoming.map(s=>{
+    const last = s.history[s.history.length-1];
+    return '<tr><td class="mono">'+escapeHtml(s.id)+'</td><td><span class="timer" data-start="'+last.dispatchedAt+'"></span> in transit</td></tr>';
+  }).join('') || '<tr><td colspan="2" class="empty">Nothing in transit toward this stage.</td></tr>';
+
+  const hint = idx===0
+    ? 'New samples are registered the first time they\'re scanned here.'
+    : 'Samples must already be dispatched from '+escapeHtml(stages[idx-1])+' before they can be received here.';
+
+  return (
+    '<div class="topbar"><button class="btn btn-ghost" onclick="goRole()">← Back</button>'+
+      '<div><div class="brand">'+escapeHtml(stage)+'</div><div class="brand-sub">Sample Tracker — Usmanpura</div></div></div>'+
+    '<div class="scan-box"><label class="scan-label">Scan or type sample barcode</label>'+
+      '<div class="scan-row"><input id="scanInput" autocomplete="off" placeholder="e.g. RC-00123" onkeydown="if(event.key===\'Enter\') handleScanSubmit('+JSON.stringify(stage)+')">'+
+      '<button class="btn btn-primary" onclick="handleScanSubmit('+JSON.stringify(stage)+')">Receive</button></div>'+
+      '<div class="hint">'+hint+'</div></div>'+
+    '<div class="panel"><h4>Currently at '+escapeHtml(stage)+' ('+active.length+')</h4>'+
+      '<div class="table-wrap"><table class="table"><thead><tr><th>Sample</th><th>Time here</th><th></th></tr></thead><tbody>'+activeRows+'</tbody></table></div></div>'+
+    '<div class="panel"><h4>In transit, expected here</h4>'+
+      '<div class="table-wrap"><table class="table"><thead><tr><th>Sample</th><th>In transit time</th></tr></thead><tbody>'+incomingRows+'</tbody></table></div></div>'
+  );
+}
+
+function renderDirectorHTML(){
+  const stages = currentState.stages;
+  let all = Object.values(currentState.samples).sort((a,b)=>b.createdAt-a.createdAt);
+  const activeCount = all.filter(s=>!s.completed).length;
+  const completedToday = all.filter(s=>s.completed && isToday(s.completedAt)).length;
+  const completedSamples = all.filter(s=>s.completed);
+  const avgTotal = completedSamples.length
+    ? completedSamples.reduce((sum,s)=>sum+(s.completedAt-s.createdAt),0)/completedSamples.length
+    : 0;
+
+  let filtered = all;
+  if(directorFilter.trim()){
+    const f = directorFilter.trim().toLowerCase();
+    filtered = all.filter(s=>s.id.toLowerCase().includes(f));
+  }
+
+  const rows = filtered.map(s=>{
+    const last = s.history[s.history.length-1];
+    let statusLabel, statusStart, statusEnd='';
+    if(s.completed){ statusLabel='Completed'; statusStart=s.completedAt; statusEnd=s.completedAt; }
+    else if(last.dispatchedAt===null){ statusLabel='At '+escapeHtml(last.stage); statusStart=last.receivedAt; }
+    else{
+      const i2 = stages.indexOf(last.stage); const next = stages[i2+1];
+      statusLabel = next ? 'In transit to '+escapeHtml(next) : 'Completed';
+      statusStart = last.dispatchedAt;
+    }
+    const historyRows = s.history.map(h=>{
+      const dur = (h.dispatchedAt||Date.now()) - h.receivedAt;
+      return '<div class="hist-row"><span>'+escapeHtml(h.stage)+'</span><span class="mono">'+formatDuration(dur)+'</span></div>';
+    }).join('');
+
+    return (
+      '<tr class="sample-row" onclick="toggleDetail('+JSON.stringify(s.id)+')">'+
+        '<td class="mono">'+escapeHtml(s.id)+'</td>'+
+        '<td>'+statusLabel+'</td>'+
+        '<td>'+(s.completed?'—':'<span class="timer" data-start="'+statusStart+'"></span>')+'</td>'+
+        '<td><span class="timer" data-start="'+s.createdAt+'" data-end="'+(s.completedAt||'')+'"></span></td>'+
+      '</tr>'+
+      '<tr class="detail-row" id="'+domId(s.id)+'" style="display:none"><td colspan="4"><div class="hist-box">'+(historyRows||'<span class="empty">No history.</span>')+'</div></td></tr>'
+    );
+  }).join('') || '<tr><td colspan="4" class="empty">No samples match.</td></tr>';
+
+  return (
+    '<div class="topbar"><button class="btn btn-ghost" onclick="goRole()">← Back</button>'+
+      '<div><div class="brand">Director Dashboard</div><div class="brand-sub">Sample Tracker — Usmanpura</div></div></div>'+
+    '<div class="stats-row">'+
+      '<div class="stat-card"><div class="stat-num">'+activeCount+'</div><div class="stat-label">Active samples</div></div>'+
+      '<div class="stat-card"><div class="stat-num">'+completedToday+'</div><div class="stat-label">Completed today</div></div>'+
+      '<div class="stat-card"><div class="stat-num">'+(avgTotal?formatDuration(avgTotal):'—')+'</div><div class="stat-label">Avg. total turnaround</div></div>'+
+    '</div>'+
+    '<div class="panel">'+
+      '<input id="directorSearch" placeholder="Search sample ID…" oninput="setDirectorFilter(this.value)">'+
+      '<div class="table-wrap"><table class="table"><thead><tr><th>Sample</th><th>Status</th><th>Time in status</th><th>Total elapsed</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+      '<div class="hint" style="margin-top:10px">Tap a row to see its full stage-by-stage history.</div>'+
+    '</div>'
+  );
+}
+
+(async function init(){
+  await loadState();
+  render();
+  tickTimers();
+  setInterval(tickTimers, 1000);
+  setInterval(poll, 4000);
+})();
+</script>
+</body>
+</html>
